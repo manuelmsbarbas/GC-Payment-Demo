@@ -1,0 +1,535 @@
+[
+  {
+    "scheme": "Bacs",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "currency": "GBP",
+    "iban": "GB60BARC20000055779911",
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "sortCode", "label": "Sort Code", "value": "200000" },
+      { "key": "accountNumber", "label": "Account Number", "value": "55779911" }
+    ],
+    "customerDefaults": {
+      "address_line1": "10 Downing Street",
+      "city": "London",
+      "postal_code": "SW1A 2AA"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "France",
+    "countryCode": "FR",
+    "currency": "EUR",
+    "iban": "FR1420041010050500013M02606",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "codebanque", "label": "Code Banque (Bank Code)", "value": "20041" },
+      { "key": "codeguichet", "label": "Code Guichet (Counter Code)", "value": "01005" },
+      { "key": "accountNumber", "label": "Numéro de Compte", "value": "0500013M026" },
+      { "key": "ribKey", "label": "Clé RIB", "value": "06" }
+    ],
+    "customerDefaults": {
+      "address_line1": "12 Rue de la Paix",
+      "city": "Paris",
+      "postal_code": "75001"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Germany",
+    "countryCode": "DE",
+    "currency": "EUR",
+    "iban": "DE89370400440532013000",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bankleitzahl (Bank Code)", "value": "37040044" },
+      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "0532013000" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Unter den Linden 1",
+      "city": "Berlin",
+      "postal_code": "10117"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Spain",
+    "countryCode": "ES",
+    "currency": "EUR",
+    "iban": "ES6621000418401234567891",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "entityCode", "label": "Código de entidad (Entity Code)", "value": "2100" },
+      { "key": "branchCode", "label": "Código de sucursal (Branch Code)", "value": "0418" },
+      { "key": "controlDigits", "label": "Dígitos de control", "value": "40" },
+      { "key": "accountNumber", "label": "Número de cuenta", "value": "1234567891" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Calle Gran Via 1",
+      "city": "Madrid",
+      "postal_code": "28013"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Austria",
+    "countryCode": "AT",
+    "currency": "EUR",
+    "iban": "AT483200000012345864",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bankleitzahl (Bank Code)", "value": "32000" },
+      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "00012345864" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Ringstrasse 1",
+      "city": "Vienna",
+      "postal_code": "1010"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Netherlands",
+    "countryCode": "NL",
+    "currency": "EUR",
+    "iban": "NL91ABNA0417164300",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bank Code", "value": "ABNA" },
+      { "key": "accountNumber", "label": "Rekeningnummer (Account Number)", "value": "0417164300" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Herengracht 1",
+      "city": "Amsterdam",
+      "postal_code": "1017BN"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Belgium",
+    "countryCode": "BE",
+    "currency": "EUR",
+    "iban": "BE71096123456769",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "accountNumber", "label": "Rekeningnummer / Numéro de compte", "value": "096-1234567-69" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Rue de la Loi 1",
+      "city": "Brussels",
+      "postal_code": "1000"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Ireland",
+    "countryCode": "IE",
+    "currency": "EUR",
+    "iban": "IE92BOFI90001710027952",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "sortCode", "label": "Sort Code", "value": "900017" },
+      { "key": "accountNumber", "label": "Account Number", "value": "10027952" }
+    ],
+    "customerDefaults": {
+      "address_line1": "1 Grafton Street",
+      "city": "Dublin",
+      "postal_code": "D02"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Italy",
+    "countryCode": "IT",
+    "currency": "EUR",
+    "iban": "IT60X0542811101000000123456",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "abiCode", "label": "Codice ABI (ABI Code)", "value": "05428" },
+      { "key": "cab", "label": "CAB", "value": "11101" },
+      { "key": "accountNumber", "label": "Numero di conto", "value": "123456" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Via Roma 1",
+      "city": "Milan",
+      "postal_code": "20121"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Czech Republic",
+    "countryCode": "CZ",
+    "currency": "EUR",
+    "iban": "CZ6508000000192000145399",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Wenceslas Square 1",
+      "city": "Prague",
+      "postal_code": "11000"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Poland",
+    "countryCode": "PL",
+    "currency": "EUR",
+    "iban": "PL61109010140000071219812874",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "ul. Nowy Swiat 1",
+      "city": "Warsaw",
+      "postal_code": "00001"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Portugal",
+    "countryCode": "PT",
+    "currency": "EUR",
+    "iban": "PT50002700000001234567833",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Código de Banco (Bank Code)", "value": "0027" },
+      { "key": "branchCode", "label": "Código de Balcão (OTC Code)", "value": "0000" },
+      { "key": "accountNumber", "label": "Número de conta e Dígitos de controlo", "value": "0001234567833" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Rua Augusta 1",
+      "city": "Lisbon",
+      "postal_code": "1100"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Cyprus",
+    "countryCode": "CY",
+    "currency": "EUR",
+    "iban": "CY21002001950000357001234567",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Kodikos Trapezas (Bank Code)", "value": "002" },
+      { "key": "branchCode", "label": "Kodikos Katastimatos (Branch Code)", "value": "00195" },
+      { "key": "accountNumber", "label": "Arithmos Logariasmou (Account Number)", "value": "0000357001234567" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Ledras Street 1",
+      "city": "Nicosia",
+      "postal_code": "1095"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Estonia",
+    "countryCode": "EE",
+    "currency": "EUR",
+    "iban": null,
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Viru Street 1",
+      "city": "Tallinn",
+      "postal_code": "10140"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Finland",
+    "countryCode": "FI",
+    "currency": "EUR",
+    "iban": "FI1410093000123458",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Code Banque (Bank Code)", "value": "100930" },
+      { "key": "accountNumber", "label": "Tilinumero (Account Number)", "value": "00123458" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Mannerheimintie 1",
+      "city": "Helsinki",
+      "postal_code": "00100"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Greece",
+    "countryCode": "GR",
+    "currency": "EUR",
+    "iban": "GR9608100010000001234567890",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Kodikos Trapezas (Bank Code)", "value": "081" },
+      { "key": "branchCode", "label": "Kodikos Katastimatos (Branch Code)", "value": "0001" },
+      { "key": "accountNumber", "label": "Arithmos Logariasmou (Account Number)", "value": "0000001234567890" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Ermou Street 1",
+      "city": "Athens",
+      "postal_code": "10563"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Latvia",
+    "countryCode": "LV",
+    "currency": "EUR",
+    "iban": "LV95UNLA0050005826416",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Brivibas iela 1",
+      "city": "Riga",
+      "postal_code": "LV-1010"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Lithuania",
+    "countryCode": "LT",
+    "currency": "EUR",
+    "iban": "LT601010012345678901",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bank Code", "value": "10100" },
+      { "key": "accountNumber", "label": "Account Number", "value": "00435195001" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Gedimino pr. 1",
+      "city": "Vilnius",
+      "postal_code": "01103"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Luxembourg",
+    "countryCode": "LU",
+    "currency": "EUR",
+    "iban": "LU120010001234567891",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bank Code", "value": "001" },
+      { "key": "accountNumber", "label": "Account Number", "value": "0001234567891" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Boulevard Royal 1",
+      "city": "Luxembourg",
+      "postal_code": "L-2449"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Malta",
+    "countryCode": "MT",
+    "currency": "EUR",
+    "iban": "MT98MMEB44093000000009027293051",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Republic Street 1",
+      "city": "Valletta",
+      "postal_code": "VLT1116"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Monaco",
+    "countryCode": "MC",
+    "currency": "EUR",
+    "iban": "MC5810096180790123456789085",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Code Banque (Bank Code)", "value": "10096" },
+      { "key": "guichet", "label": "Code Guichet (Branch Code)", "value": "18079" },
+      { "key": "accountNumber", "label": "Numéro de Compte", "value": "01234567890" },
+      { "key": "ribKey", "label": "Clé RIB", "value": "85" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Boulevard des Moulins 1",
+      "city": "Monaco",
+      "postal_code": "98000"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "San Marino",
+    "countryCode": "SM",
+    "currency": "EUR",
+    "iban": "SM86U0322509800000000270100",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Piazza della Liberta 1",
+      "city": "San Marino",
+      "postal_code": "47890"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Slovak Republic",
+    "countryCode": "SK",
+    "currency": "EUR",
+    "iban": "SK8975000000000012345671",
+    "displayMode": "iban",
+    "bankFields": [],
+    "customerDefaults": {
+      "address_line1": "Obchodna 1",
+      "city": "Bratislava",
+      "postal_code": "81101"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "SEPA",
+    "country": "Slovenia",
+    "countryCode": "SI",
+    "currency": "EUR",
+    "iban": "SI56192001234567892",
+    "displayMode": "iban",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bank Code", "value": "19200" },
+      { "key": "accountNumber", "label": "Account Number", "value": "1234567892" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Slovenska cesta 1",
+      "city": "Ljubljana",
+      "postal_code": "1000"
+    },
+    "supportsInstantBankPay": true
+  },
+  {
+    "scheme": "BECS",
+    "country": "Australia",
+    "countryCode": "AU",
+    "currency": "AUD",
+    "iban": null,
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "bsb", "label": "BSB", "value": "082-082" },
+      { "key": "accountNumber", "label": "Account Number", "value": "012345678" }
+    ],
+    "customerDefaults": {
+      "address_line1": "1 Martin Place",
+      "city": "Sydney",
+      "postal_code": "2000"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "BecsNz",
+    "country": "New Zealand",
+    "countryCode": "NZ",
+    "currency": "NZD",
+    "iban": null,
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "bankCode", "label": "Bank Code", "value": "01" },
+      { "key": "branchCode", "label": "Branch Code", "value": "0004" },
+      { "key": "accountNumber", "label": "Account Number", "value": "3333333" },
+      { "key": "suffix", "label": "Suffix", "value": "44" }
+    ],
+    "customerDefaults": {
+      "address_line1": "1 Queen Street",
+      "city": "Auckland",
+      "postal_code": "1010"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "Autogiro",
+    "country": "Sweden",
+    "countryCode": "SE",
+    "currency": "SEK",
+    "iban": "SE3550000000054910000003",
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "personalId", "label": "Swedish Personal Identity Number", "value": "198112289874" },
+      { "key": "clearingNumber", "label": "Clearingnummer (Clearing Number)", "value": "5491" },
+      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "0000003" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Drottninggatan 1",
+      "city": "Stockholm",
+      "postal_code": "11151"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "Betalingsservice",
+    "country": "Denmark",
+    "countryCode": "DK",
+    "currency": "DKK",
+    "iban": "DK5750510001322617",
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "cprNumber", "label": "CPR Number", "value": "0101701234" },
+      { "key": "regNumber", "label": "Registreringsnummer (Reg. Number)", "value": "5051" },
+      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "1322617" }
+    ],
+    "customerDefaults": {
+      "address_line1": "Stroget 1",
+      "city": "Copenhagen",
+      "postal_code": "1001"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "PAD",
+    "country": "Canada",
+    "countryCode": "CA",
+    "currency": "CAD",
+    "iban": null,
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "institutionNumber", "label": "Institution Number", "value": "0003" },
+      { "key": "transitNumber", "label": "Transit Number", "value": "00006" },
+      { "key": "accountNumber", "label": "Account Number", "value": "1234567" }
+    ],
+    "customerDefaults": {
+      "address_line1": "1 Bay Street",
+      "city": "Toronto",
+      "postal_code": "M5J 2T3"
+    },
+    "supportsInstantBankPay": false
+  },
+  {
+    "scheme": "ACH",
+    "country": "United States",
+    "countryCode": "US",
+    "currency": "USD",
+    "iban": null,
+    "displayMode": "local",
+    "bankFields": [
+      { "key": "routingNumber", "label": "Routing Number", "value": "026073150" },
+      { "key": "accountNumber", "label": "Account Number", "value": "2715500356" }
+    ],
+    "customerDefaults": {
+      "address_line1": "123 Main Street",
+      "city": "San Francisco",
+      "postal_code": "94108"
+    },
+    "supportsInstantBankPay": false
+  }
+]
