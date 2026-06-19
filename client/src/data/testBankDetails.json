@@ -35,7 +35,7 @@
       "city": "Paris",
       "postal_code": "75001"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -53,7 +53,7 @@
       "city": "Berlin",
       "postal_code": "10117"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -91,7 +91,7 @@
       "city": "Vienna",
       "postal_code": "1010"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -107,9 +107,9 @@
     "customerDefaults": {
       "address_line1": "Herengracht 1",
       "city": "Amsterdam",
-      "postal_code": "1017BN"
+      "postal_code": "1015BA"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -126,7 +126,7 @@
       "city": "Brussels",
       "postal_code": "1000"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -144,7 +144,7 @@
       "city": "Dublin",
       "postal_code": "D02"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -163,7 +163,7 @@
       "city": "Milan",
       "postal_code": "20121"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -212,7 +212,7 @@
       "city": "Lisbon",
       "postal_code": "1100"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -246,7 +246,7 @@
       "city": "Tallinn",
       "postal_code": "10140"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -264,7 +264,7 @@
       "city": "Helsinki",
       "postal_code": "00100"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -298,7 +298,7 @@
       "city": "Riga",
       "postal_code": "LV-1010"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -316,7 +316,7 @@
       "city": "Vilnius",
       "postal_code": "01103"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -334,7 +334,7 @@
       "city": "Luxembourg",
       "postal_code": "L-2449"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "SEPA",
@@ -417,7 +417,7 @@
       "city": "Ljubljana",
       "postal_code": "1000"
     },
-    "supportsInstantBankPay": true
+    "supportsInstantBankPay": false
   },
   {
     "scheme": "BECS",

@@ -14,7 +14,7 @@ interface FilterContextValue {
 
 const FilterContext = createContext<FilterContextValue | null>(null);
 
-const DEFAULT_COUNTRY = 'FR';
+const DEFAULT_COUNTRY = 'GB';
 const defaultEntry = bankDetailsData.find(e => e.countryCode === DEFAULT_COUNTRY)!;
 
 export function FilterProvider({ children }: { children: ReactNode }) {

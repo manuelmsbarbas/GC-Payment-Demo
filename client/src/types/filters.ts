@@ -1,4 +1,4 @@
-export type FlowType = 'hosted' | 'custom';
+export type FlowType = 'hosted' | 'custom' | 'js-drop-in';
 export type SchemeId = 'Bacs' | 'SEPA' | 'BECS' | 'BecsNz' | 'Autogiro' | 'Betalingsservice' | 'PAD' | 'ACH';
 
 export interface FilterState {

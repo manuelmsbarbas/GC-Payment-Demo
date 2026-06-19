@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { gcFetch } from '../services/gocardless';
+import { upsertSubscription } from '../services/redisStore';
 
 const router = Router();
 
@@ -11,23 +12,50 @@ const router = Router();
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { mandate_id } = req.body as { mandate_id: string };
+    const {
+      mandate_id,
+      amount = 1000,
+      currency = 'EUR',
+      name = 'Europa SEPA Subscription',
+      interval_unit = 'monthly',
+      interval = 1,
+    } = req.body as {
+      mandate_id: string;
+      amount?: number;
+      currency?: string;
+      name?: string;
+      interval_unit?: string;
+      interval?: number;
+    };
 
-    const data = await gcFetch<{ subscriptions: unknown }>('/subscriptions', {
+    const data = await gcFetch<{ subscriptions: { id: string; [key: string]: unknown } }>('/subscriptions', {
       method: 'POST',
       body: {
         subscriptions: {
-          amount: 1000,
-          currency: 'EUR',
-          name: 'Europa SEPA Subscription',
-          interval_unit: 'monthly',
-          interval: 1,
+          amount,
+          currency,
+          name,
+          interval_unit,
+          interval,
           links: { mandate: mandate_id },
         },
       },
     });
 
-    res.status(201).json(data.subscriptions);
+    const sub = data.subscriptions;
+    await upsertSubscription({
+      id: sub.id,
+      state: 'created',
+      mandate_id,
+      name,
+      amount,
+      currency,
+      interval,
+      interval_unit,
+      created_at: new Date().toISOString(),
+    });
+
+    res.status(201).json(sub);
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to create subscription' });
   }
