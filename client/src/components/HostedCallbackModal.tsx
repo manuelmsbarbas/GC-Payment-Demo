@@ -1,12 +1,29 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import type {
+  BillingRequest,
   HostedSessionConfig,
   Subscription,
   Payment,
   InstalmentSchedule,
   CreateInstalmentScheduleBody,
 } from '../types/api';
+
+async function pollBillingRequest(
+  id: string,
+  check: (br: BillingRequest) => boolean,
+  maxAttempts = 10,
+  delayMs = 2000
+): Promise<BillingRequest> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const br = await api.getBillingRequest(id);
+    if (check(br)) return br;
+    if (attempt < maxAttempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('Timed out waiting for GoCardless to complete — the payment may still finalise via webhook');
+}
 
 const HOSTED_SESSION_KEY = 'gc_hosted_config';
 
@@ -80,19 +97,24 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
 
     try {
       if (isIBP) {
-        // For all IBP paths (custom and hosted), GC auto-fulfils on bank authorisation.
-        // Just read the already-fulfilled billing request to get the payment ID.
-        const br = await api.getBillingRequest(billingRequestId);
-        ibpPaymentId = br.links.payment_request_payment ?? '';
-        if (!ibpPaymentId) throw new Error('No payment ID found — the payment may not be complete yet');
+        // Poll until payment_request_payment is linked — GC may redirect before the
+        // payment ID is populated on the billing request.
+        const br = await pollBillingRequest(
+          billingRequestId,
+          b => !!b.links.payment_request_payment
+        );
+        ibpPaymentId = br.links.payment_request_payment!;
       } else if (isInstantPlusDD) {
-        // Instant+DD: the mandate is needed to create the subscription.
+        // Poll until mandate_request_mandate is linked.
         // payment_request_payment may arrive asynchronously — confirmed via webhook.
-        const br = await api.getBillingRequest(billingRequestId);
-        mandateId = br.links.mandate_request_mandate ?? '';
+        const br = await pollBillingRequest(
+          billingRequestId,
+          b => !!b.links.mandate_request_mandate
+        );
+        mandateId = br.links.mandate_request_mandate!;
         ibpPaymentId = br.links.payment_request_payment ?? '';
-        if (!mandateId) throw new Error('No mandate ID found — the billing request may not be fulfilled yet');
       } else {
+        // DD hosted: mandate is set synchronously on the hosted page before redirect.
         const br = await api.getBillingRequest(billingRequestId);
         mandateId = br.links.mandate_request_mandate ?? '';
         if (!mandateId) throw new Error('No mandate ID found — the billing request may not be fulfilled yet');
