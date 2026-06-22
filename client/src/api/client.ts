@@ -16,7 +16,7 @@ import type {
   HistoryResponse,
 } from '../types/api';
 
-const BASE = 'http://localhost:3001';
+const BASE = 'https://gc-demo-test-server-production.up.railway.app';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
