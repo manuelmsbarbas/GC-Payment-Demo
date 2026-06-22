@@ -6,14 +6,15 @@ const router = Router();
 // POST /drop-in/start
 // Creates a billing request and billing request flow.
 // The Drop-In JS component handles all customer and bank detail collection itself.
-router.post('/start', async (_req: Request, res: Response) => {
+router.post('/start', async (req: Request, res: Response) => {
   try {
+    const { scheme = 'sepa_core', currency = 'EUR' } = req.body as { scheme?: string; currency?: string };
     // 1. Create billing request — pending actions (collect_customer_details,
     //    collect_bank_account, confirm_payer_details) are handled by the Drop-In
     const billingRequest = await gcClient.billingRequests.create({
-      mandate_request: { 
-        scheme: 'sepa_core', 
-        currency: 'EUR' },
+      mandate_request: {
+        scheme: scheme as 'sepa_core',
+        currency: currency as 'EUR' },
     });
 
 

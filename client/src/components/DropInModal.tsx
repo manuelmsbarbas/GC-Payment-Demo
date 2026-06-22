@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { api } from '../api/client';
 import { useFilters } from '../context/FilterContext';
+import { SCHEME_API_ID } from '../types/filters';
 import type { PaymentMethodId } from '../data/paymentMethods';
 import type {
   Subscription,
@@ -104,7 +105,7 @@ export function DropInModal({ methodId, onClose }: DropInModalProps) {
 
   const currency = bankDetails?.currency ?? 'EUR';
   const label = METHOD_LABELS[methodId] ?? methodId;
-  const isSepa = filters.scheme === 'SEPA';
+  const schemeApiId = SCHEME_API_ID[filters.scheme];
 
   const isSubscription = methodId === 'subscription';
   const isOneOffDD = methodId === 'one-off-dd';
@@ -165,7 +166,7 @@ export function DropInModal({ methodId, onClose }: DropInModalProps) {
 
   async function launch() {
     try {
-      const response = await api.dropInStart();
+      const response = await api.dropInStart(schemeApiId, currency);
       const { billing_request_flow_id } = response;
 
       await loadDropInScript();
@@ -274,11 +275,6 @@ export function DropInModal({ methodId, onClose }: DropInModalProps) {
         {/* ── Config phase: wizard ── */}
         {phase === 'config' && (
           <>
-            {!isSepa && (
-              <div className="demo-notice">
-                JS Drop-In demo currently supports SEPA only. Select a SEPA country in the sidebar.
-              </div>
-            )}
 
             <div className="wizard-nav">
               <div className="wizard-nav-info">
@@ -686,7 +682,6 @@ export function DropInModal({ methodId, onClose }: DropInModalProps) {
                   <button
                     type="button"
                     className="btn-primary"
-                    disabled={!isSepa}
                     onClick={handleConfirmLaunch}
                   >
                     Confirm & Launch Drop-In

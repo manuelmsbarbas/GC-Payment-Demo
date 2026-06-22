@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { api } from '../api/client';
 import { useFilters } from '../context/FilterContext';
+import { SCHEME_API_ID } from '../types/filters';
 import type { PaymentMethodId } from '../data/paymentMethods';
 import type { HostedSessionConfig } from '../types/api';
 
@@ -65,7 +66,7 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
 
   const currency = bankDetails?.currency ?? 'EUR';
   const label = METHOD_LABELS[methodId] ?? methodId;
-  const isSepa = filters.scheme === 'SEPA';
+  const schemeApiId = SCHEME_API_ID[filters.scheme];
 
   const isSubscription = methodId === 'subscription';
   const isOneOffDD = methodId === 'one-off-dd';
@@ -73,7 +74,7 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
   const isIBP = methodId === 'instant-bank-pay';
   const isInstantPlusDD = methodId === 'instant-plus-dd';
 
-  const canLaunch = (isIBP || isInstantPlusDD) ? filters.countryCode === 'GB' : isSepa;
+  const canLaunch = (isIBP || isInstantPlusDD) ? filters.countryCode === 'GB' : bankDetails != null;
 
   // ── One-off DD state ──────────────────────────────────────────────────────
   const [amountInput, setAmountInput] = useState('25.00');
@@ -167,7 +168,7 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
         };
         sessionStorage.setItem(HOSTED_SESSION_KEY, JSON.stringify(config));
       } else {
-        const result = await api.hostedStart();
+        const result = await api.hostedStart(schemeApiId, currency);
         authorisation_url = result.authorisation_url;
         billing_request_id = result.billing_request_id;
 
@@ -212,11 +213,9 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
         {/* ── Config phase: wizard ── */}
         {phase === 'config' && (
           <>
-            {!canLaunch && (
+            {!canLaunch && (isIBP || isInstantPlusDD) && (
               <div className="demo-notice">
-                {(isIBP || isInstantPlusDD)
-                  ? `Hosted ${isInstantPlusDD ? 'Instant + DD' : 'IBP'} is only available for UK (GBP). Select United Kingdom in the sidebar.`
-                  : 'Hosted Pages demo currently supports SEPA only. Select a SEPA country in the sidebar.'}
+                {`Hosted ${isInstantPlusDD ? 'Instant + DD' : 'IBP'} is only available for UK (GBP). Select United Kingdom in the sidebar.`}
               </div>
             )}
 

@@ -8,13 +8,14 @@ const router = Router();
 // Creates a SEPA billing request and a billing request flow for the GoCardless Hosted
 // Payment Pages integration. auto_fulfil is false — we fulfil manually on callback so
 // the mandate ID is available to create the subscription/payment/instalment schedule.
-router.post('/start', async (_req: Request, res: Response) => {
+router.post('/start', async (req: Request, res: Response) => {
   try {
+    const { scheme = 'sepa_core', currency = 'EUR' } = req.body as { scheme?: string; currency?: string };
     const brData = await gcFetch<{ billing_requests: { id: string } }>('/billing_requests', {
       method: 'POST',
       body: {
         billing_requests: {
-          mandate_request: { scheme: 'sepa_core', currency: 'EUR' },
+          mandate_request: { scheme, currency },
         },
       },
     });

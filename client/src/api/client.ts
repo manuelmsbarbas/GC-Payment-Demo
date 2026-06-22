@@ -73,11 +73,11 @@ export const api = {
   createInstalmentSchedule: (body: CreateInstalmentScheduleBody) =>
     post<InstalmentSchedule>('/instalment-schedules', body),
 
-  dropInStart: () =>
-    post<DropInStartResponse>('/drop-in/start'),
+  dropInStart: (scheme: string, currency: string) =>
+    post<DropInStartResponse>('/drop-in/start', { scheme, currency }),
 
-  hostedStart: () =>
-    post<HostedStartResponse>('/hosted/start'),
+  hostedStart: (scheme: string, currency: string) =>
+    post<HostedStartResponse>('/hosted/start', { scheme, currency }),
 
   getInstitutions: (id: string, countryCode = 'GB') =>
     get<Institution[]>(`/billing-requests/${id}/institutions?country_code=${countryCode}`),

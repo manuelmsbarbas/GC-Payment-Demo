@@ -119,15 +119,16 @@ router.post('/:id/select-institution', async (req: Request, res: Response) => {
 // Step 1 — Create billing request (mandate, payment, or instant-plus-dd)
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { payment_type = 'mandate', amount, currency = 'EUR' } = req.body as {
+    const { payment_type = 'mandate', amount, currency = 'EUR', scheme = 'sepa_core' } = req.body as {
       payment_type?: 'mandate' | 'payment' | 'instant-plus-dd';
       amount?: number;
       currency?: string;
+      scheme?: string;
     };
 
     // payment_type 'payment' — Instant Bank Pay (FasterPayments only)
     // payment_type 'instant-plus-dd' — combined IBP (FasterPayments) + Bacs DD mandate
-    // default — SEPA mandate only
+    // default — DD mandate for the specified scheme/currency
     let billingRequestBody: object;
     if (payment_type === 'payment') {
       billingRequestBody = { billing_requests: { payment_request: { description: 'Instant Bank Pay', amount: amount ?? 1000, currency, scheme: 'faster_payments' } } };
@@ -139,7 +140,7 @@ router.post('/', async (req: Request, res: Response) => {
         },
       };
     } else {
-      billingRequestBody = { billing_requests: { mandate_request: { scheme: 'sepa_core', currency: 'EUR' } } };
+      billingRequestBody = { billing_requests: { mandate_request: { scheme, currency } } };
     }
 
 

@@ -7,8 +7,8 @@
     "iban": "GB60BARC20000055779911",
     "displayMode": "local",
     "bankFields": [
-      { "key": "sortCode", "label": "Sort Code", "value": "200000" },
-      { "key": "accountNumber", "label": "Account Number", "value": "55779911" }
+      { "key": "branch_code", "label": "Sort Code", "value": "200000" },
+      { "key": "account_number", "label": "Account Number", "value": "55779911" }
     ],
     "customerDefaults": {
       "address_line1": "10 Downing Street",
@@ -428,7 +428,7 @@
     "displayMode": "local",
     "bankFields": [
       { "key": "bsb", "label": "BSB", "value": "082-082" },
-      { "key": "accountNumber", "label": "Account Number", "value": "012345678" }
+      { "key": "account_number", "label": "Account Number", "value": "012345678" }
     ],
     "customerDefaults": {
       "address_line1": "1 Martin Place",
@@ -445,10 +445,10 @@
     "iban": null,
     "displayMode": "local",
     "bankFields": [
-      { "key": "bankCode", "label": "Bank Code", "value": "01" },
-      { "key": "branchCode", "label": "Branch Code", "value": "0004" },
-      { "key": "accountNumber", "label": "Account Number", "value": "3333333" },
-      { "key": "suffix", "label": "Suffix", "value": "44" }
+      { "key": "bank_code", "label": "Bank Code", "value": "01" },
+      { "key": "branch_code", "label": "Branch Code", "value": "0004" },
+      { "key": "account_number", "label": "Account Number", "value": "3333333" },
+      { "key": "account_suffix", "label": "Suffix", "value": "44" }
     ],
     "customerDefaults": {
       "address_line1": "1 Queen Street",
@@ -465,9 +465,9 @@
     "iban": "SE3550000000054910000003",
     "displayMode": "local",
     "bankFields": [
-      { "key": "personalId", "label": "Swedish Personal Identity Number", "value": "198112289874" },
-      { "key": "clearingNumber", "label": "Clearingnummer (Clearing Number)", "value": "5491" },
-      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "0000003" }
+      { "key": "swedish_identity_number", "label": "Swedish Personal Identity Number", "value": "198112289874" },
+      { "key": "branch_code", "label": "Clearingnummer (Clearing Number)", "value": "5491" },
+      { "key": "account_number", "label": "Kontonummer (Account Number)", "value": "0000003" }
     ],
     "customerDefaults": {
       "address_line1": "Drottninggatan 1",
@@ -484,9 +484,9 @@
     "iban": "DK5750510001322617",
     "displayMode": "local",
     "bankFields": [
-      { "key": "cprNumber", "label": "CPR Number", "value": "0101701234" },
-      { "key": "regNumber", "label": "Registreringsnummer (Reg. Number)", "value": "5051" },
-      { "key": "accountNumber", "label": "Kontonummer (Account Number)", "value": "1322617" }
+      { "key": "danish_identity_number", "label": "CPR Number", "value": "0101701234" },
+      { "key": "branch_code", "label": "Registreringsnummer (Reg. Number)", "value": "5051" },
+      { "key": "account_number", "label": "Kontonummer (Account Number)", "value": "1322617" }
     ],
     "customerDefaults": {
       "address_line1": "Stroget 1",
@@ -503,9 +503,9 @@
     "iban": null,
     "displayMode": "local",
     "bankFields": [
-      { "key": "institutionNumber", "label": "Institution Number", "value": "0003" },
-      { "key": "transitNumber", "label": "Transit Number", "value": "00006" },
-      { "key": "accountNumber", "label": "Account Number", "value": "1234567" }
+      { "key": "institution_number", "label": "Institution Number", "value": "0003" },
+      { "key": "transit_number", "label": "Transit Number", "value": "00006" },
+      { "key": "account_number", "label": "Account Number", "value": "1234567" }
     ],
     "customerDefaults": {
       "address_line1": "1 Bay Street",
@@ -522,8 +522,8 @@
     "iban": null,
     "displayMode": "local",
     "bankFields": [
-      { "key": "routingNumber", "label": "Routing Number", "value": "026073150" },
-      { "key": "accountNumber", "label": "Account Number", "value": "2715500356" }
+      { "key": "routing_number", "label": "Routing Number", "value": "026073150" },
+      { "key": "account_number", "label": "Account Number", "value": "2715500356" }
     ],
     "customerDefaults": {
       "address_line1": "123 Main Street",

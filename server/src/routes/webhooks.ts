@@ -17,11 +17,18 @@ router.post('/', validateWebhookSignature, (req: Request, res: Response) => {
   try {
     const payload = JSON.parse((req.body as Buffer).toString()) as WebhookPayload;
 
+    let i = 0;
     for (const event of payload.events) {
       processWebhookEvent(event);
+      
+      console.log("EVENT NUMber: "  + i);
+      console.log(event);
+      i++;
     }
 
     console.log(`[Webhook] Processed ${payload.events.length} event(s)`);
+    
+
     res.status(200).json({ received: payload.events.length });
   } catch (err) {
     console.error('[Webhook] Failed to process payload:', err);

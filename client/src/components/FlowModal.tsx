@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { useFilters } from '../context/FilterContext';
+import { SCHEME_API_ID } from '../types/filters';
 import { PAYMENT_METHODS } from '../data/paymentMethods';
 import type { PaymentMethodId } from '../data/paymentMethods';
 import type {
@@ -168,7 +169,7 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
   const isInstantPlusDD = methodId === 'instant-plus-dd';
 
   const demoSupported =
-    ((isSubscription || isOneOffDD || isInstalment) && filters.scheme === 'SEPA' && bankDetails?.iban != null) ||
+    ((isSubscription || isOneOffDD || isInstalment) && bankDetails != null) ||
     (isIBP && filters.countryCode === 'GB') ||
     (isInstantPlusDD && filters.countryCode === 'GB');
 
@@ -389,9 +390,11 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
 
   async function runSubscriptionFlow() {
     setRunning(true);
+    const schemeApiId = SCHEME_API_ID[filters.scheme];
+    const currency = bankDetails?.currency ?? 'EUR';
     try {
       setSubStep('createBillingRequest', { status: 'loading' });
-      const br: BillingRequest = await api.createBillingRequest();
+      const br: BillingRequest = await api.createBillingRequest({ scheme: schemeApiId, currency });
       setSubStep('createBillingRequest', { status: 'success', data: br });
 
       setSubStep('collectCustomerDetails', { status: 'loading' });
@@ -409,8 +412,8 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
       setSubStep('collectBankAccount', { status: 'loading' });
       const afterBank: BillingRequest = await api.collectBankAccount(br.id, {
         account_holder_name: customer.account_holder_name,
-        iban: bankValues['iban'] ?? '',
         country_code: customer.country_code,
+        ...bankValues,
       });
       setSubStep('collectBankAccount', { status: 'success', data: afterBank });
 
@@ -448,11 +451,12 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
   async function runOneOffFlow() {
     setRunning(true);
     const amountMinorUnits = Math.round(parseFloat(amountInput) * 100);
+    const schemeApiId = SCHEME_API_ID[filters.scheme];
     const currency = bankDetails?.currency ?? 'EUR';
 
     try {
       setOneOffStep('createBillingRequest', { status: 'loading' });
-      const br: BillingRequest = await api.createBillingRequest();
+      const br: BillingRequest = await api.createBillingRequest({ scheme: schemeApiId, currency });
       setOneOffStep('createBillingRequest', { status: 'success', data: br });
 
       setOneOffStep('collectCustomerDetails', { status: 'loading' });
@@ -470,8 +474,8 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
       setOneOffStep('collectBankAccount', { status: 'loading' });
       const afterBank: BillingRequest = await api.collectBankAccount(br.id, {
         account_holder_name: customer.account_holder_name,
-        iban: bankValues['iban'] ?? '',
         country_code: customer.country_code,
+        ...bankValues,
       });
       setOneOffStep('collectBankAccount', { status: 'success', data: afterBank });
 
@@ -508,11 +512,12 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
 
   async function runInstalmentFlow() {
     setRunning(true);
+    const schemeApiId = SCHEME_API_ID[filters.scheme];
     const currency = bankDetails?.currency ?? 'EUR';
 
     try {
       setInstalmentStep('createBillingRequest', { status: 'loading' });
-      const br: BillingRequest = await api.createBillingRequest();
+      const br: BillingRequest = await api.createBillingRequest({ scheme: schemeApiId, currency });
       setInstalmentStep('createBillingRequest', { status: 'success', data: br });
 
       setInstalmentStep('collectCustomerDetails', { status: 'loading' });
@@ -530,8 +535,8 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
       setInstalmentStep('collectBankAccount', { status: 'loading' });
       const afterBank: BillingRequest = await api.collectBankAccount(br.id, {
         account_holder_name: customer.account_holder_name,
-        iban: bankValues['iban'] ?? '',
         country_code: customer.country_code,
+        ...bankValues,
       });
       setInstalmentStep('collectBankAccount', { status: 'success', data: afterBank });
 
@@ -742,11 +747,6 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
           </div>
         )}
 
-        {(isSubscription || isOneOffDD || isInstalment) && filters.scheme !== 'SEPA' && filters.flowType === 'custom' && (
-          <div className="demo-notice">
-            This demo currently supports SEPA only. Form is pre-filled with <strong>{bankDetails?.country}</strong> test data for reference.
-          </div>
-        )}
 
         {/* ── Wizard (filling phase) ── */}
         {wizardPhase === 'filling' && (
