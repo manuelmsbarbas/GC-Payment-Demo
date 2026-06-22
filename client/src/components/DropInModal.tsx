@@ -166,7 +166,17 @@ export function DropInModal({ methodId, onClose }: DropInModalProps) {
 
   async function launch() {
     try {
-      const response = await api.dropInStart(schemeApiId, currency);
+      const prefilledCustomer = bankDetails ? {
+        given_name: 'Manuel',
+        family_name: 'Barbas',
+        email: 'mbarbas@gocardless.com',
+        address_line1: bankDetails.customerDefaults.address_line1,
+        city: bankDetails.customerDefaults.city,
+        postal_code: bankDetails.customerDefaults.postal_code,
+        country_code: filters.countryCode,
+      } : undefined;
+
+      const response = await api.dropInStart(schemeApiId, currency, prefilledCustomer);
       const { billing_request_flow_id } = response;
 
       await loadDropInScript();

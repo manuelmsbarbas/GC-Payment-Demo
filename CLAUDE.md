@@ -43,10 +43,10 @@ The Vite dev server proxies `/api/*` → `localhost:3001` (stripping the `/api` 
 | `POST /subscriptions` | Create subscription against a mandate — accepts optional `amount`, `currency`, `name`, `interval`, `interval_unit` (defaults: 1000 / EUR / "Europa SEPA Subscription" / 1 / monthly) |
 | `POST /payments` | Collect a one-off payment against a mandate (amount + currency from request body) |
 | `POST /instalment-schedules` | Create instalment schedule against a mandate — supports both "with dates" (explicit per-instalment charge dates) and "with schedule" (interval + amounts array) modes |
-| `POST /drop-in/start` | JS Drop-In only — accepts `{ scheme, currency }`; creates a billing request + billing request flow for any DD scheme; returns `billing_request_flow_id` for the client to pass to the Drop-In component |
-| `POST /hosted/start` | Hosted DD — accepts `{ scheme, currency }`; creates a billing request + billing request flow for any DD scheme; `redirect_uri` is `CLIENT_ORIGIN/?gc_billing_request_id=<id>`; returns `{ authorisation_url, billing_request_id }` |
-| `POST /hosted/ibp/start` | Hosted IBP — creates a GBP/FasterPayments billing request + billing request flow; same redirect pattern as DD hosted; returns `{ authorisation_url, billing_request_id }` |
-| `POST /hosted/instant-plus-dd/start` | Hosted Instant+DD — creates a combined billing request (payment_request faster_payments + mandate_request bacs) + billing request flow; same redirect pattern; returns `{ authorisation_url, billing_request_id }` |
+| `POST /drop-in/start` | JS Drop-In only — accepts `{ scheme, currency, prefilled_customer? }`; creates a billing request + billing request flow for any DD scheme; `prefilled_customer` (name, email, address, country_code) is forwarded to the flow; returns `billing_request_flow_id` for the client to pass to the Drop-In component |
+| `POST /hosted/start` | Hosted DD — accepts `{ scheme, currency, prefilled_customer? }`; creates a billing request + billing request flow for any DD scheme; `prefilled_customer` forwarded to the flow; `redirect_uri` is `CLIENT_ORIGIN/?gc_billing_request_id=<id>`; returns `{ authorisation_url, billing_request_id }` |
+| `POST /hosted/ibp/start` | Hosted IBP — accepts `{ amount, currency, prefilled_customer? }`; creates a GBP/FasterPayments billing request + billing request flow; `prefilled_customer` forwarded to the flow; same redirect pattern as DD hosted; returns `{ authorisation_url, billing_request_id }` |
+| `POST /hosted/instant-plus-dd/start` | Hosted Instant+DD — accepts `{ amount, currency, prefilled_customer? }`; creates a combined billing request (payment_request faster_payments + mandate_request bacs) + billing request flow; `prefilled_customer` forwarded to the flow; same redirect pattern; returns `{ authorisation_url, billing_request_id }` |
 | `POST /webhooks` | Receive & enqueue GoCardless webhook events |
 | `GET /events/stream` | SSE stream — pushes processed events to the UI |
 | `GET /history` | Return hierarchical payment history from Redis — all customers with their mandates, payments, subscriptions, and instalment schedules |
@@ -78,9 +78,11 @@ Types are defined in `src/types/store.ts`:
 **Webhook pipeline**:
 1. `POST /webhooks` validates the HMAC-SHA256 signature (`Webhook-Signature` header) via `src/middleware/webhookSignature.ts`.
 2. Events are bulk-enqueued to the `webhook-events` BullMQ queue (`src/queues/webhookQueue.ts`) — 3 attempts, exponential backoff.
-3. `webhookWorker.ts` processes jobs (concurrency 5), dispatches to `handleMandate` / `handlePayment` / `handleSubscription` / `handleInstalmentSchedule`, updates Redis state via `redisStore`, then calls `webhookEmitter.broadcast(event)`.
+3. `webhookWorker.ts` processes jobs (concurrency 5), dispatches to `handleMandate` / `handlePayment` / `handleBillingRequest` / `handleSubscription` / `handleInstalmentSchedule`, updates Redis state via `redisStore`, then calls `webhookEmitter.broadcast(event)`.
 4. `webhookEmitter` (`src/events/emitter.ts`) is a Node `EventEmitter` that bridges the worker to the SSE route.
 5. The SSE route (`src/routes/sse.ts`) emits a heartbeat every 30 s to keep proxies alive.
+
+**`handleBillingRequest`** handles `billing_requests.fulfilled` as a fallback for IBP and Instant+DD flows — seeds the customer and payment into Redis in case the customer authorises at their bank but never returns to the app (browser closed, direct-to-app flow, etc.). Every write is guarded with an existence check so it never overwrites data already seeded by the HTTP redirect callback. All other `billing_requests.*` actions are no-ops.
 
 ## Client (`client/`)
 
@@ -199,7 +201,7 @@ Used exclusively for the **JS Drop-In** flow type. Rendered by `PaymentMethodGri
 **Review step (Step 2 of 2):** summarises what will happen — Drop-In sets up the mandate, then the configured payment/subscription/schedule is created.
 
 **How it works (after confirm):**
-1. Calls `POST /drop-in/start` with `{ scheme, currency }` derived from the selected country → receives `billing_request_flow_id`.
+1. Calls `POST /drop-in/start` with `{ scheme, currency, prefilled_customer }` derived from the selected country → receives `billing_request_flow_id`. `prefilled_customer` is built from `bankDetails.customerDefaults` (address fields) plus hardcoded name/email (`Manuel Barbas`, `mbarbas@gocardless.com`) and the sidebar `countryCode`, so the customer step on the Drop-In overlay is pre-populated.
 2. Dynamically loads the GoCardless Drop-In script (`https://pay.gocardless.com/billing/static/dropin/v2/initialise.js`).
 3. Calls `GoCardlessDropin.create({ billingRequestFlowID, environment: 'sandbox', onSuccess, onExit })` then **`.open()`** — the Drop-In v2 API returns `{ open, exit }` and requires an explicit `.open()` call to show the overlay.
 4. The Drop-In handles all customer details, bank account collection, mandate confirmation, and fulfilment as a full-screen overlay on the customer's page.
@@ -219,7 +221,7 @@ Used when `flowType === 'hosted'` and the method is one of the five supported on
 | Phase | What happens |
 |---|---|
 | `config` | 2-step wizard (config → review) — identical fields and UI to `DropInModal`; IBP shows amount input only; Instant+DD shows upfront amount + subscription config fields |
-| `launching` | Calls `POST /hosted/start` (DD), `POST /hosted/ibp/start` (IBP), or `POST /hosted/instant-plus-dd/start` (Instant+DD), stores config in `sessionStorage`, does `window.location.href = authorisation_url` |
+| `launching` | Calls `POST /hosted/start` (DD), `POST /hosted/ibp/start` (IBP), or `POST /hosted/instant-plus-dd/start` (Instant+DD) with `prefilled_customer` built from `bankDetails` context, stores config in `sessionStorage`, does `window.location.href = authorisation_url` |
 | `error` | Error message if the start call fails |
 
 On confirm, the full `HostedSessionConfig` (method, currency, all payment-specific fields) is written to `sessionStorage` under the key `gc_hosted_config` before the redirect so `HostedCallbackModal` can read it on return. For IBP, the config includes `{ methodId: 'instant-bank-pay', currency: 'GBP', amountInput }`. For Instant+DD, the config includes `{ methodId: 'instant-plus-dd', currency: 'GBP', amountInput, subName, subAmount, subInterval, subIntervalUnit }`.
@@ -296,7 +298,7 @@ Provides `filters` (flowType, countryCode, scheme), `bankDetails` (the matching 
 | `types/filters.ts` | `FlowType` (`'custom' \| 'js-drop-in' \| 'hosted'`), `SchemeId`, `FilterState`, `BankDetails`, `BankField` types. Also exports `SCHEME_API_ID: Record<SchemeId, string>` — maps display scheme names to GoCardless API scheme strings (e.g. `'SEPA' → 'sepa_core'`, `'Bacs' → 'bacs'`, `'BECS' → 'becs'`, `'BecsNz' → 'becs_nz'`, `'Autogiro' → 'autogiro'`, `'Betalingsservice' → 'betalingsservice'`, `'PAD' → 'pad'`, `'ACH' → 'ach'`). |
 | `types/api.ts` | Request/response shapes (`BillingRequest`, `Payment`, `Subscription`, `InstalmentSchedule`, `Institution`, `BankAuthorisation`), flow state types (`IBPFlow` with `selectInstitution` + `createBankAuthorisation` steps; `InstantPlusDDFlow` with `createBillingRequest` + `collectCustomerDetails` + `selectInstitution` + `createBankAuthorisation` + `createSubscription` steps), request body types, `DropInStartResponse`, `HostedStartResponse`, and `HostedSessionConfig` (written to `sessionStorage` before redirect; includes optional `flow?: 'ibp-custom' \| 'instant-plus-dd-custom'` field). `CreateBillingRequestBody` is a union covering `payment` (IBP), `instant-plus-dd`, or `{ scheme, currency }` (DD mandate for any scheme). History types: `HistoryPayment`, `HistorySubscription`, `HistoryInstalmentSchedule`, `HistoryMandate`, `HistoryCustomer`, `HistoryResponse`. `WebhookEvent` interface (used by `PaymentsHistoryTable` to extract the affected resource ID from the SSE stream). |
 
-**API client**: `src/api/client.ts` — thin typed wrappers around `fetch`. Calls `http://localhost:3001` directly (not via the Vite proxy). Methods include: `getBillingRequest`, `getInstitutions`, `selectInstitution`, `createBankAuthorisation`, `hostedStart(scheme, currency)`, `hostedIbpStart`, `hostedInstantPlusDDStart`, `dropInStart(scheme, currency)`, `getHistory`, and all billing-request action methods.
+**API client**: `src/api/client.ts` — thin typed wrappers around `fetch`. Calls the Railway server URL directly (not via the Vite proxy). Methods include: `getBillingRequest`, `getInstitutions`, `selectInstitution`, `createBankAuthorisation`, `hostedStart(scheme, currency, prefilled_customer?)`, `hostedIbpStart(amount, currency, prefilled_customer?)`, `hostedInstantPlusDDStart(amount, currency, prefilled_customer?)`, `dropInStart(scheme, currency, prefilled_customer?)`, `getHistory`, and all billing-request action methods. `PrefilledCustomer` type (exported from `types/api.ts`) carries `given_name`, `family_name`, `email`, `address_line1`, `city`, `postal_code`, `country_code`.
 
 ## Environment Variables
 

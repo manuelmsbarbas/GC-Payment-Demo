@@ -9,6 +9,10 @@ import {
   updateSubscriptionState,
   updateInstalmentScheduleState,
   getMandate,
+  getCustomer,
+  getPayment,
+  getTempBrDetails,
+  deleteTempBrDetails,
 } from '../services/redisStore';
 
 async function handleMandate(event: WebhookEvent): Promise<void> {
@@ -125,6 +129,62 @@ async function handleInstalmentSchedule(event: WebhookEvent): Promise<void> {
   }
 }
 
+async function handleBillingRequest(event: WebhookEvent): Promise<void> {
+  if (event.action !== 'fulfilled') return;
+
+  const brId = event.links.billing_request;
+  const paymentId = event.links.payment_request_payment;
+  const mandateId = event.links.mandate_request_mandate;
+  const customerId = event.links.customer;
+
+  if (!brId || !customerId) return;
+
+  // Seed customer — skip if the redirect callback already created it
+  const existingCustomer = await getCustomer(customerId);
+  if (!existingCustomer) {
+    const temp = await getTempBrDetails(brId);
+    await upsertCustomer({
+      id: customerId,
+      name: temp ? `${temp.given_name} ${temp.family_name}` : 'Unknown',
+      email: temp?.email ?? '',
+      created_at: event.created_at,
+    });
+    if (temp) await deleteTempBrDetails(brId);
+  }
+
+  // Seed IBP payment — skip if the redirect callback already created it
+  if (paymentId) {
+    const existingPayment = await getPayment(paymentId);
+    if (!existingPayment) {
+      const isInstantPlusDD = !!mandateId;
+      await upsertPayment({
+        id: paymentId,
+        state: 'created',
+        mandate_id: mandateId ?? customerId,
+        amount: 0,
+        currency: '',
+        description: 'Instant Bank Pay',
+        type: isInstantPlusDD ? 'instant-plus-dd' : 'ibp',
+        created_at: event.created_at,
+      });
+    }
+  }
+
+  // Seed Bacs mandate for Instant+DD — skip if already created by mandate webhook
+  if (mandateId) {
+    const existingMandate = await getMandate(mandateId);
+    if (!existingMandate) {
+      await upsertMandate({
+        id: mandateId,
+        state: 'created',
+        customer_id: customerId,
+        scheme: 'bacs',
+        created_at: event.created_at,
+      });
+    }
+  }
+}
+
 export function processWebhookEvent(event: WebhookEvent): void {
   console.log(`[Worker] ${event.resource_type}.${event.action} — ${event.id}`);
 
@@ -135,6 +195,9 @@ export function processWebhookEvent(event: WebhookEvent): void {
         break;
       case 'payments':
         await handlePayment(event);
+        break;
+      case 'billing_requests':
+        await handleBillingRequest(event);
         break;
       case 'subscriptions':
         await handleSubscription(event);

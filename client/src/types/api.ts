@@ -1,3 +1,15 @@
+// ── Pre-fill ──────────────────────────────────────────────────────────────────
+
+export interface PrefilledCustomer {
+  given_name?: string;
+  family_name?: string;
+  email?: string;
+  address_line1?: string;
+  city?: string;
+  postal_code?: string;
+  country_code?: string;
+}
+
 // ── Request bodies ────────────────────────────────────────────────────────────
 
 export interface CollectCustomerDetailsBody {

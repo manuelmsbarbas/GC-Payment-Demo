@@ -10,7 +10,7 @@ export interface WebhookEvent {
   id: string;
   created_at: string;
   action: string;
-  resource_type: 'payments' | 'mandates' | 'subscriptions' | 'refunds' | 'payouts' | string;
+  resource_type: 'payments' | 'mandates' | 'subscriptions' | 'billing_requests' | 'refunds' | 'payouts' | string;
   links: Record<string, string>;
   details: WebhookEventDetails;
   metadata: Record<string, string>;

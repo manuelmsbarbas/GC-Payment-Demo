@@ -10,7 +10,11 @@ const router = Router();
 // the mandate ID is available to create the subscription/payment/instalment schedule.
 router.post('/start', async (req: Request, res: Response) => {
   try {
-    const { scheme = 'sepa_core', currency = 'EUR' } = req.body as { scheme?: string; currency?: string };
+    const { scheme = 'sepa_core', currency = 'EUR', prefilled_customer } = req.body as {
+      scheme?: string;
+      currency?: string;
+      prefilled_customer?: Record<string, string>;
+    };
     const brData = await gcFetch<{ billing_requests: { id: string } }>('/billing_requests', {
       method: 'POST',
       body: {
@@ -32,6 +36,7 @@ router.post('/start', async (req: Request, res: Response) => {
           redirect_uri: redirectUri,
           exit_uri: env.clientOrigin,
           links: { billing_request: billingRequestId },
+          ...(prefilled_customer && { prefilled_customer }),
         },
       },
     });
@@ -52,7 +57,11 @@ router.post('/start', async (req: Request, res: Response) => {
 // Creates a billing request with a payment_request (FasterPayments / IBP) and a hosted flow.
 router.post('/ibp/start', async (req: Request, res: Response) => {
   try {
-    const { amount, currency = 'GBP' } = req.body as { amount?: number; currency?: string };
+    const { amount, currency = 'GBP', prefilled_customer } = req.body as {
+      amount?: number;
+      currency?: string;
+      prefilled_customer?: Record<string, string>;
+    };
 
     const brData = await gcFetch<{ billing_requests: { id: string } }>('/billing_requests', {
       method: 'POST',
@@ -80,6 +89,7 @@ router.post('/ibp/start', async (req: Request, res: Response) => {
           redirect_uri: redirectUri,
           exit_uri: env.clientOrigin,
           links: { billing_request: billingRequestId },
+          ...(prefilled_customer && { prefilled_customer }),
         },
       },
     });
@@ -101,7 +111,11 @@ router.post('/ibp/start', async (req: Request, res: Response) => {
 // for the Instant + Direct Debit hosted flow.
 router.post('/instant-plus-dd/start', async (req: Request, res: Response) => {
   try {
-    const { amount, currency = 'GBP' } = req.body as { amount?: number; currency?: string };
+    const { amount, currency = 'GBP', prefilled_customer } = req.body as {
+      amount?: number;
+      currency?: string;
+      prefilled_customer?: Record<string, string>;
+    };
 
     const brData = await gcFetch<{ billing_requests: { id: string } }>('/billing_requests', {
       method: 'POST',
@@ -133,6 +147,7 @@ router.post('/instant-plus-dd/start', async (req: Request, res: Response) => {
           redirect_uri: redirectUri,
           exit_uri: env.clientOrigin,
           links: { billing_request: billingRequestId },
+          ...(prefilled_customer && { prefilled_customer }),
         },
       },
     });

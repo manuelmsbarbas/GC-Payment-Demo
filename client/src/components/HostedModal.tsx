@@ -133,13 +133,23 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
     hasLaunched.current = true;
     setPhase('launching');
 
+    const prefilledCustomer = bankDetails ? {
+      given_name: 'Manuel',
+      family_name: 'Barbas',
+      email: 'mbarbas@gocardless.com',
+      address_line1: bankDetails.customerDefaults.address_line1,
+      city: bankDetails.customerDefaults.city,
+      postal_code: bankDetails.customerDefaults.postal_code,
+      country_code: filters.countryCode,
+    } : undefined;
+
     try {
       let authorisation_url: string;
       let billing_request_id: string;
 
       if (isIBP) {
         const amountMinorUnits = Math.round(parseFloat(amountInput) * 100);
-        const result = await api.hostedIbpStart(amountMinorUnits, 'GBP');
+        const result = await api.hostedIbpStart(amountMinorUnits, 'GBP', prefilledCustomer);
         authorisation_url = result.authorisation_url;
         billing_request_id = result.billing_request_id;
 
@@ -152,7 +162,7 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
         sessionStorage.setItem(HOSTED_SESSION_KEY, JSON.stringify(config));
       } else if (isInstantPlusDD) {
         const amountMinorUnits = Math.round(parseFloat(amountInput) * 100);
-        const result = await api.hostedInstantPlusDDStart(amountMinorUnits, 'GBP');
+        const result = await api.hostedInstantPlusDDStart(amountMinorUnits, 'GBP', prefilledCustomer);
         authorisation_url = result.authorisation_url;
         billing_request_id = result.billing_request_id;
 
@@ -168,7 +178,7 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
         };
         sessionStorage.setItem(HOSTED_SESSION_KEY, JSON.stringify(config));
       } else {
-        const result = await api.hostedStart(schemeApiId, currency);
+        const result = await api.hostedStart(schemeApiId, currency, prefilledCustomer);
         authorisation_url = result.authorisation_url;
         billing_request_id = result.billing_request_id;
 

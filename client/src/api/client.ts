@@ -14,6 +14,7 @@ import type {
   Institution,
   BankAuthorisation,
   HistoryResponse,
+  PrefilledCustomer,
 } from '../types/api';
 
 const BASE = 'https://gc-demo-test-server-production.up.railway.app';
@@ -73,11 +74,11 @@ export const api = {
   createInstalmentSchedule: (body: CreateInstalmentScheduleBody) =>
     post<InstalmentSchedule>('/instalment-schedules', body),
 
-  dropInStart: (scheme: string, currency: string) =>
-    post<DropInStartResponse>('/drop-in/start', { scheme, currency }),
+  dropInStart: (scheme: string, currency: string, prefilled_customer?: PrefilledCustomer) =>
+    post<DropInStartResponse>('/drop-in/start', { scheme, currency, prefilled_customer }),
 
-  hostedStart: (scheme: string, currency: string) =>
-    post<HostedStartResponse>('/hosted/start', { scheme, currency }),
+  hostedStart: (scheme: string, currency: string, prefilled_customer?: PrefilledCustomer) =>
+    post<HostedStartResponse>('/hosted/start', { scheme, currency, prefilled_customer }),
 
   getInstitutions: (id: string, countryCode = 'GB') =>
     get<Institution[]>(`/billing-requests/${id}/institutions?country_code=${countryCode}`),
@@ -88,11 +89,11 @@ export const api = {
   createBankAuthorisation: (billing_request_id: string) =>
     post<BankAuthorisation>('/bank-authorisations', { billing_request_id }),
 
-  hostedIbpStart: (amount: number, currency: string) =>
-    post<HostedStartResponse>('/hosted/ibp/start', { amount, currency }),
+  hostedIbpStart: (amount: number, currency: string, prefilled_customer?: PrefilledCustomer) =>
+    post<HostedStartResponse>('/hosted/ibp/start', { amount, currency, prefilled_customer }),
 
-  hostedInstantPlusDDStart: (amount: number, currency: string) =>
-    post<HostedStartResponse>('/hosted/instant-plus-dd/start', { amount, currency }),
+  hostedInstantPlusDDStart: (amount: number, currency: string, prefilled_customer?: PrefilledCustomer) =>
+    post<HostedStartResponse>('/hosted/instant-plus-dd/start', { amount, currency, prefilled_customer }),
 
   getHistory: () =>
     get<HistoryResponse>('/history'),
