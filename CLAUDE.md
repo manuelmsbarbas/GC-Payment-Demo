@@ -171,7 +171,7 @@ On confirm, the API steps run live with status icons `○ ◌ ✓ ✗`. A succes
 
 **Important action differences — IBP / Instant+DD vs DD:**
 - IBP billing requests use `payment_request` only (`scheme: 'faster_payments'`). Instant+DD billing requests use **both** `payment_request` (`scheme: 'faster_payments'`) and `mandate_request` (`scheme: 'bacs'`).
-- `confirm_payer_details` is **mandate-only** — never call it for IBP or Instant+DD.
+- `confirm_payer_details` is called for **Instant+DD** (Custom flow only) but NOT for pure IBP. Pure IBP has no `mandate_request` so the action doesn't exist on its billing request. Instant+DD has a `mandate_request`, so GoCardless adds `confirm_payer_details` as a required action and the billing request will not fulfil without it. GoCardless Hosted handles this internally; Custom flow calls it explicitly after `collect_customer_details`.
 - `collect_bank_account` is **not called for IBP or Instant+DD** — the bank is identified through `select_institution`; Open Banking handles account extraction for the Bacs mandate automatically.
 - Neither IBP nor Instant+DD calls `fulfil` — GoCardless auto-fulfils when the customer authorises in their banking app.
 - On IBP callback: `GET /billing-requests/:id` → read `links.payment_request_payment`.

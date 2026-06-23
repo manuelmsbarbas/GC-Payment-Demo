@@ -290,6 +290,11 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
         payment_type: 'instant-plus-dd',
         amount: amountMinorUnits,
         currency: 'GBP',
+        sub_name: subName,
+        sub_amount: subAmount,
+        sub_interval: subInterval,
+        sub_interval_unit: subIntervalUnit,
+        sub_currency: 'GBP',
       });
       setInstantPlusDDBillingRequestId(br.id);
 
@@ -302,6 +307,12 @@ export function FlowModal({ methodId, onClose }: FlowModalProps) {
         postal_code: customer.postal_code,
         country_code: customer.country_code,
       });
+
+      // Required for Instant+DD: the mandate_request adds confirm_payer_details to
+      // the billing request's required actions. Pure IBP has no mandate_request so
+      // this action doesn't exist there, but here it must be explicitly completed
+      // before bank_authorisation or GoCardless will not fulfil the billing request.
+      await api.confirmPayerDetails(br.id);
 
       const instList = await api.getInstitutions(br.id);
       setInstitutions(instList);

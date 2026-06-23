@@ -46,7 +46,16 @@ export interface CreateSubscriptionBody {
 
 export type CreateBillingRequestBody =
   | { payment_type: 'payment'; amount: number; currency: string }
-  | { payment_type: 'instant-plus-dd'; amount: number; currency: string }
+  | {
+      payment_type: 'instant-plus-dd';
+      amount: number;
+      currency: string;
+      sub_name: string;
+      sub_amount: string;
+      sub_interval: string;
+      sub_interval_unit: string;
+      sub_currency: string;
+    }
   | { scheme: string; currency: string };
 
 export interface CreatePaymentBody {

@@ -73,8 +73,6 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
     const cfg = config.current!;
     const isIBP = cfg.methodId === 'instant-bank-pay';
     const isInstantPlusDD = cfg.methodId === 'instant-plus-dd';
-    // Hosted Instant+DD has no cfg.flow; custom Instant+DD sets flow: 'instant-plus-dd-custom'
-    const isHostedInstantPlusDD = isInstantPlusDD && !cfg.flow;
 
     // Step 1: Single read of the billing request — no polling
     setFulfilStep({ status: 'loading' });
@@ -113,14 +111,8 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
     }
 
     // IBP: payment already created by GoCardless during bank authorisation
-    if (isIBP) {
-      setDone(true);
-      sessionStorage.removeItem(HOSTED_SESSION_KEY);
-      return;
-    }
-
-    // Hosted Instant+DD: subscription created by webhook worker — nothing left to do client-side
-    if (isHostedInstantPlusDD) {
+    // Instant+DD (both Custom and Hosted): subscription created by webhook worker
+    if (isIBP || isInstantPlusDD) {
       setDone(true);
       sessionStorage.removeItem(HOSTED_SESSION_KEY);
       return;
@@ -291,8 +283,8 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
                 )}
               </div>
 
-              {/* Step 2: Create resource — hidden for IBP and hosted Instant+DD */}
-              {cfg?.methodId !== 'instant-bank-pay' && !(cfg?.methodId === 'instant-plus-dd' && !cfg?.flow) && (
+              {/* Step 2: Create resource — hidden for IBP and all Instant+DD (worker handles subscription) */}
+              {cfg?.methodId !== 'instant-bank-pay' && cfg?.methodId !== 'instant-plus-dd' && (
                 <div className={`flow-step flow-step--${resourceStep.status}`}>
                   <span className="flow-step-icon">{STATUS_ICON[resourceStep.status]}</span>
                   <span className="flow-step-label">{resourceLabel}</span>

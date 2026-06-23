@@ -1,12 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { gcFetch } from '../services/gocardless';
 import {
+  redis,
   saveTempBrDetails,
+  saveTempBrSubConfig,
   getTempBrDetails,
   deleteTempBrDetails,
   upsertCustomer,
   upsertMandate,
+  getMandate,
   upsertPayment,
+  getPayment,
 } from '../services/redisStore';
 
 const router = Router();
@@ -56,35 +60,45 @@ router.get('/:id', async (req: Request, res: Response) => {
       });
 
       if (mandateId) {
-        const brFull = br as unknown as Record<string, unknown>;
-        const mandateReq = brFull.mandate_request as Record<string, string> | undefined;
-        await upsertMandate({
-          id: mandateId,
-          state: 'created',
-          customer_id: customerId,
-          scheme: mandateReq?.scheme ?? 'unknown',
-          created_at: new Date().toISOString(),
-        });
+        const existingMandate = await getMandate(mandateId);
+        if (!existingMandate) {
+          const brFull = br as unknown as Record<string, unknown>;
+          const mandateReq = brFull.mandate_request as Record<string, string> | undefined;
+          // Preserve state set by concurrent mandate webhook events (e.g. mandates.active)
+          const existingState = await redis.hget(`mandate:${mandateId}`, 'state');
+          await upsertMandate({
+            id: mandateId,
+            state: existingState ?? 'created',
+            customer_id: customerId,
+            scheme: mandateReq?.scheme ?? 'unknown',
+            created_at: new Date().toISOString(),
+          });
+        }
       }
 
       if (paymentId) {
-        const brFull = br as unknown as Record<string, unknown>;
-        const paymentReq = brFull.payment_request as Record<string, unknown> | undefined;
-        const isInstantPlusDD = !!mandateId;
-        await upsertPayment({
-          id: paymentId,
-          state: 'created',
-          // For IBP, use customerId as mandate_id placeholder since there is no mandate
-          mandate_id: mandateId ?? customerId,
-          amount: Number(paymentReq?.amount ?? 0),
-          currency: String(paymentReq?.currency ?? 'GBP'),
-          description: String(paymentReq?.description ?? 'Instant Bank Pay'),
-          type: isInstantPlusDD ? 'instant-plus-dd' : 'ibp',
-          created_at: new Date().toISOString(),
-        });
+        const existingPayment = await getPayment(paymentId);
+        if (!existingPayment) {
+          const brFull = br as unknown as Record<string, unknown>;
+          const paymentReq = brFull.payment_request as Record<string, unknown> | undefined;
+          const isInstantPlusDD = !!mandateId;
+          // Preserve state set by concurrent payment webhook events (e.g. payments.confirmed)
+          const existingState = await redis.hget(`payment:${paymentId}`, 'state');
+          await upsertPayment({
+            id: paymentId,
+            state: existingState ?? 'created',
+            mandate_id: mandateId ?? customerId,
+            amount: Number(paymentReq?.amount ?? 0),
+            currency: String(paymentReq?.currency ?? 'GBP'),
+            description: String(paymentReq?.description ?? 'Instant Bank Pay'),
+            type: isInstantPlusDD ? 'instant-plus-dd' : 'ibp',
+            created_at: new Date().toISOString(),
+          });
+        }
       }
 
-      await deleteTempBrDetails(id);
+      // Do NOT delete temp:br here — the webhook worker needs it to read sub config
+      // for hosted Instant+DD flows. The worker handles cleanup after creating the subscription.
     }
 
     res.json(br);
@@ -131,11 +145,26 @@ router.post('/:id/select-institution', async (req: Request, res: Response) => {
 // Step 1 — Create billing request (mandate, payment, or instant-plus-dd)
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { payment_type = 'mandate', amount, currency = 'EUR', scheme = 'sepa_core' } = req.body as {
+    const {
+      payment_type = 'mandate',
+      amount,
+      currency = 'EUR',
+      scheme = 'sepa_core',
+      sub_name,
+      sub_amount,
+      sub_interval,
+      sub_interval_unit,
+      sub_currency,
+    } = req.body as {
       payment_type?: 'mandate' | 'payment' | 'instant-plus-dd';
       amount?: number;
       currency?: string;
       scheme?: string;
+      sub_name?: string;
+      sub_amount?: string;
+      sub_interval?: string;
+      sub_interval_unit?: string;
+      sub_currency?: string;
     };
 
     // payment_type 'payment' — Instant Bank Pay (FasterPayments only)
@@ -155,15 +184,24 @@ router.post('/', async (req: Request, res: Response) => {
       billingRequestBody = { billing_requests: { mandate_request: { scheme, currency } } };
     }
 
-
     const data = await gcFetch<BillingRequestResponse>('/billing_requests', {
       method: 'POST',
       body: billingRequestBody,
     });
 
+    const brId = data.billing_requests.id;
 
-    console.log("BILLING REQUEST -  data");
-    console.log(data);
+    // Save subscription config to temp:br so the webhook worker can create the
+    // subscription after billing_requests.fulfilled fires (Custom Instant+DD path).
+    if (payment_type === 'instant-plus-dd' && sub_name && sub_amount) {
+      await saveTempBrSubConfig(brId, {
+        sub_name,
+        sub_amount,
+        sub_interval: sub_interval ?? '1',
+        sub_interval_unit: sub_interval_unit ?? 'monthly',
+        sub_currency: sub_currency ?? 'GBP',
+      });
+    }
 
     res.status(201).json(data.billing_requests);
   } catch (err) {

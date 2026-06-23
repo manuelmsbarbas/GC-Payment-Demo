@@ -2,6 +2,7 @@ import { WebhookEvent } from '../types/webhook';
 import { webhookEmitter } from '../events/emitter';
 import { gcFetch } from '../services/gocardless';
 import {
+  redis,
   upsertCustomer,
   upsertMandate,
   updateMandateState,
@@ -33,9 +34,11 @@ async function handleMandate(event: WebhookEvent): Promise<void> {
         email: '',
         created_at: event.created_at,
       });
+      // Preserve state set by a concurrently processed mandates.active event
+      const existingState = await redis.hget(`mandate:${id}`, 'state');
       await upsertMandate({
         id,
-        state: 'created',
+        state: existingState ?? 'created',
         customer_id: customerId,
         scheme: event.details?.scheme ?? 'unknown',
         created_at: event.created_at,
@@ -153,17 +156,21 @@ async function handleBillingRequest(event: WebhookEvent): Promise<void> {
       email: temp?.email ?? '',
       created_at: event.created_at,
     });
-    if (temp) await deleteTempBrDetails(brId);
+    // Do NOT delete temp:br here — the sub config is still needed for hosted Instant+DD
+    // subscription creation below. The if (paymentId && mandateId) block handles cleanup.
   }
 
-  // Seed IBP payment — skip if the redirect callback already created it
+  // Seed IBP payment — skip if the redirect callback already created it.
+  // getPayment returns null for partial entries (state-only hashes written before billing_request.fulfilled),
+  // so we preserve any state that payment event handlers already wrote rather than resetting to 'created'.
   if (paymentId) {
     const existingPayment = await getPayment(paymentId);
     if (!existingPayment) {
+      const existingState = await redis.hget(`payment:${paymentId}`, 'state');
       const isInstantPlusDD = !!mandateId;
       await upsertPayment({
         id: paymentId,
-        state: 'created',
+        state: existingState ?? 'created',
         mandate_id: mandateId ?? customerId,
         amount: 0,
         currency: '',
@@ -174,13 +181,15 @@ async function handleBillingRequest(event: WebhookEvent): Promise<void> {
     }
   }
 
-  // Seed Bacs mandate for Instant+DD — skip if already created by mandate webhook
+  // Seed Bacs mandate for Instant+DD — skip if already created by mandate webhook.
+  // Preserve state set by a concurrently processed mandates.active event.
   if (mandateId) {
     const existingMandate = await getMandate(mandateId);
     if (!existingMandate) {
+      const existingState = await redis.hget(`mandate:${mandateId}`, 'state');
       await upsertMandate({
         id: mandateId,
-        state: 'created',
+        state: existingState ?? 'created',
         customer_id: customerId,
         scheme: 'bacs',
         created_at: event.created_at,
