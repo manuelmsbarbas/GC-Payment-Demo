@@ -16,6 +16,13 @@ interface BillingRequestResponse {
     id: string;
     status: string;
     links: { mandate_request_mandate?: string; payment_request_payment?: string };
+    resources?: {
+      customer?: {
+        given_name?: string;
+        family_name?: string;
+        email?: string;
+      };
+    };
     [key: string]: unknown;
   };
 }
@@ -36,10 +43,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 
     if (customerId) {
       const temp = await getTempBrDetails(id);
+      const gcCustomer = br.resources?.customer;
       await upsertCustomer({
         id: customerId,
-        name: temp ? `${temp.given_name} ${temp.family_name}` : 'Unknown',
-        email: temp?.email ?? '',
+        name: gcCustomer
+          ? `${gcCustomer.given_name ?? ''} ${gcCustomer.family_name ?? ''}`.trim() || 'Unknown'
+          : temp
+            ? `${temp.given_name} ${temp.family_name}`
+            : 'Unknown',
+        email: gcCustomer?.email ?? temp?.email ?? '',
         created_at: new Date().toISOString(),
       });
 
@@ -248,10 +260,15 @@ router.post('/:id/fulfil', async (req: Request, res: Response) => {
 
     if (mandateId && customerId) {
       const temp = await getTempBrDetails(id);
+      const gcCustomer = br.resources?.customer;
       await upsertCustomer({
         id: customerId,
-        name: temp ? `${temp.given_name} ${temp.family_name}` : 'Unknown',
-        email: temp?.email ?? '',
+        name: gcCustomer
+          ? `${gcCustomer.given_name ?? ''} ${gcCustomer.family_name ?? ''}`.trim() || 'Unknown'
+          : temp
+            ? `${temp.given_name} ${temp.family_name}`
+            : 'Unknown',
+        email: gcCustomer?.email ?? temp?.email ?? '',
         created_at: new Date().toISOString(),
       });
       await upsertMandate({

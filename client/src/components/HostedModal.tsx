@@ -162,7 +162,12 @@ export function HostedModal({ methodId, onClose }: HostedModalProps) {
         sessionStorage.setItem(HOSTED_SESSION_KEY, JSON.stringify(config));
       } else if (isInstantPlusDD) {
         const amountMinorUnits = Math.round(parseFloat(amountInput) * 100);
-        const result = await api.hostedInstantPlusDDStart(amountMinorUnits, 'GBP', prefilledCustomer);
+        const result = await api.hostedInstantPlusDDStart(
+          amountMinorUnits,
+          'GBP',
+          prefilledCustomer,
+          { subName, subAmount, subInterval, subIntervalUnit }
+        );
         authorisation_url = result.authorisation_url;
         billing_request_id = result.billing_request_id;
 

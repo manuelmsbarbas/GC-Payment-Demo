@@ -1,29 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import type {
-  BillingRequest,
   HostedSessionConfig,
   Subscription,
   Payment,
   InstalmentSchedule,
   CreateInstalmentScheduleBody,
 } from '../types/api';
-
-async function pollBillingRequest(
-  id: string,
-  check: (br: BillingRequest) => boolean,
-  maxAttempts = 10,
-  delayMs = 2000
-): Promise<BillingRequest> {
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const br = await api.getBillingRequest(id);
-    if (check(br)) return br;
-    if (attempt < maxAttempts - 1) {
-      await new Promise(resolve => setTimeout(resolve, delayMs));
-    }
-  }
-  throw new Error('Timed out waiting for GoCardless to complete — the payment may still finalise via webhook');
-}
 
 const HOSTED_SESSION_KEY = 'gc_hosted_config';
 
@@ -61,6 +44,7 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
   const [fulfilStep, setFulfilStep] = useState<StepState>({ status: 'idle' });
   const [resourceStep, setResourceStep] = useState<StepState>({ status: 'idle' });
   const [done, setDone] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [fatalError, setFatalError] = useState('');
 
   const hasStarted = useRef(false);
@@ -89,33 +73,35 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
     const cfg = config.current!;
     const isIBP = cfg.methodId === 'instant-bank-pay';
     const isInstantPlusDD = cfg.methodId === 'instant-plus-dd';
+    // Hosted Instant+DD has no cfg.flow; custom Instant+DD sets flow: 'instant-plus-dd-custom'
+    const isHostedInstantPlusDD = isInstantPlusDD && !cfg.flow;
 
-    // Step 1: Get mandate ID (DD) or payment ID (IBP / Instant+DD)
+    // Step 1: Single read of the billing request — no polling
     setFulfilStep({ status: 'loading' });
     let mandateId = '';
     let ibpPaymentId = '';
 
     try {
+      const br = await api.getBillingRequest(billingRequestId);
+
       if (isIBP) {
-        // Poll until payment_request_payment is linked — GC may redirect before the
-        // payment ID is populated on the billing request.
-        const br = await pollBillingRequest(
-          billingRequestId,
-          b => !!b.links.payment_request_payment
-        );
-        ibpPaymentId = br.links.payment_request_payment!;
+        if (!br.links.payment_request_payment) {
+          setFulfilStep({ status: 'success' });
+          setProcessing(true);
+          sessionStorage.removeItem(HOSTED_SESSION_KEY);
+          return;
+        }
+        ibpPaymentId = br.links.payment_request_payment;
       } else if (isInstantPlusDD) {
-        // Poll until mandate_request_mandate is linked.
-        // payment_request_payment may arrive asynchronously — confirmed via webhook.
-        const br = await pollBillingRequest(
-          billingRequestId,
-          b => !!b.links.mandate_request_mandate
-        );
-        mandateId = br.links.mandate_request_mandate!;
+        if (!br.links.mandate_request_mandate) {
+          setFulfilStep({ status: 'success' });
+          setProcessing(true);
+          sessionStorage.removeItem(HOSTED_SESSION_KEY);
+          return;
+        }
+        mandateId = br.links.mandate_request_mandate;
         ibpPaymentId = br.links.payment_request_payment ?? '';
       } else {
-        // DD hosted: mandate is set synchronously on the hosted page before redirect.
-        const br = await api.getBillingRequest(billingRequestId);
         mandateId = br.links.mandate_request_mandate ?? '';
         if (!mandateId) throw new Error('No mandate ID found — the billing request may not be fulfilled yet');
       }
@@ -126,8 +112,15 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
       return;
     }
 
-    // For pure IBP: done — payment was already created during fulfilment
+    // IBP: payment already created by GoCardless during bank authorisation
     if (isIBP) {
+      setDone(true);
+      sessionStorage.removeItem(HOSTED_SESSION_KEY);
+      return;
+    }
+
+    // Hosted Instant+DD: subscription created by webhook worker — nothing left to do client-side
+    if (isHostedInstantPlusDD) {
       setDone(true);
       sessionStorage.removeItem(HOSTED_SESSION_KEY);
       return;
@@ -255,6 +248,26 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
               <button className="btn-secondary" onClick={onClose}>Close</button>
             </div>
           </div>
+        ) : processing ? (
+          <>
+            {cfg && (
+              <div className="hosted-callback-summary">
+                <span className="hosted-callback-summary-label">Completing:</span>
+                {renderSummary()}
+              </div>
+            )}
+            <div className="flow-steps">
+              <div className="flow-step flow-step--idle" style={{ color: '#0369a1' }}>
+                <span className="flow-step-icon">◌</span>
+                <span className="flow-step-label">
+                  Payment is processing — it will appear in Payments History once confirmed.
+                </span>
+              </div>
+            </div>
+            <div style={{ padding: '12px 0 0', textAlign: 'right' }}>
+              <button className="btn-secondary" onClick={onClose}>Close</button>
+            </div>
+          </>
         ) : (
           <>
             {/* Brief summary of what was configured */}
@@ -266,12 +279,10 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
             )}
 
             <div className="flow-steps" style={{ flexDirection: 'column', gap: 8 }}>
-              {/* Step 1: Fulfil / Read billing request */}
+              {/* Step 1: Read billing request */}
               <div className={`flow-step flow-step--${fulfilStep.status}`}>
                 <span className="flow-step-icon">{STATUS_ICON[fulfilStep.status]}</span>
-                <span className="flow-step-label">
-                  {'Read Billing Request'}
-                </span>
+                <span className="flow-step-label">Read Billing Request</span>
                 {fulfilStep.status === 'success' && fulfilStep.resultId && (
                   <span className="flow-step-id">{fulfilStep.resultId}</span>
                 )}
@@ -280,8 +291,8 @@ export function HostedCallbackModal({ billingRequestId, onClose }: HostedCallbac
                 )}
               </div>
 
-              {/* Step 2: Create resource (DD flows and instant-plus-dd) */}
-              {cfg?.methodId !== 'instant-bank-pay' && (
+              {/* Step 2: Create resource — hidden for IBP and hosted Instant+DD */}
+              {cfg?.methodId !== 'instant-bank-pay' && !(cfg?.methodId === 'instant-plus-dd' && !cfg?.flow) && (
                 <div className={`flow-step flow-step--${resourceStep.status}`}>
                   <span className="flow-step-icon">{STATUS_ICON[resourceStep.status]}</span>
                   <span className="flow-step-label">{resourceLabel}</span>

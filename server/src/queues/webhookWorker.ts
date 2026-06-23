@@ -1,17 +1,21 @@
 import { WebhookEvent } from '../types/webhook';
 import { webhookEmitter } from '../events/emitter';
+import { gcFetch } from '../services/gocardless';
 import {
   upsertCustomer,
   upsertMandate,
   updateMandateState,
   upsertPayment,
   updatePaymentState,
+  upsertSubscription,
   updateSubscriptionState,
   updateInstalmentScheduleState,
   getMandate,
   getCustomer,
   getPayment,
+  getSubscriptionsByMandate,
   getTempBrDetails,
+  getTempBrSubConfig,
   deleteTempBrDetails,
 } from '../services/redisStore';
 
@@ -181,6 +185,43 @@ async function handleBillingRequest(event: WebhookEvent): Promise<void> {
         scheme: 'bacs',
         created_at: event.created_at,
       });
+    }
+  }
+
+  // Create subscription for hosted Instant+DD flows — only when sub config was stored at flow-start
+  if (paymentId && mandateId) {
+    const subConfig = await getTempBrSubConfig(brId);
+    if (subConfig) {
+      const existingSubs = await getSubscriptionsByMandate(mandateId);
+      if (existingSubs.length === 0) {
+        const amount = Math.round(parseFloat(subConfig.sub_amount) * 100);
+        const interval = parseInt(subConfig.sub_interval, 10);
+        const subData = await gcFetch<{ subscriptions: { id: string; created_at: string } }>('/subscriptions', {
+          method: 'POST',
+          body: {
+            subscriptions: {
+              amount,
+              currency: subConfig.sub_currency,
+              name: subConfig.sub_name,
+              interval,
+              interval_unit: subConfig.sub_interval_unit,
+              links: { mandate: mandateId },
+            },
+          },
+        });
+        await upsertSubscription({
+          id: subData.subscriptions.id,
+          state: 'created',
+          mandate_id: mandateId,
+          name: subConfig.sub_name,
+          amount,
+          currency: subConfig.sub_currency,
+          interval,
+          interval_unit: subConfig.sub_interval_unit,
+          created_at: subData.subscriptions.created_at,
+        });
+      }
+      await deleteTempBrDetails(brId);
     }
   }
 }

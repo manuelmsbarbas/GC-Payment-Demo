@@ -46,7 +46,7 @@ The Vite dev server proxies `/api/*` → `localhost:3001` (stripping the `/api` 
 | `POST /drop-in/start` | JS Drop-In only — accepts `{ scheme, currency, prefilled_customer? }`; creates a billing request + billing request flow for any DD scheme; `prefilled_customer` (name, email, address, country_code) is forwarded to the flow; returns `billing_request_flow_id` for the client to pass to the Drop-In component |
 | `POST /hosted/start` | Hosted DD — accepts `{ scheme, currency, prefilled_customer? }`; creates a billing request + billing request flow for any DD scheme; `prefilled_customer` forwarded to the flow; `redirect_uri` is `CLIENT_ORIGIN/?gc_billing_request_id=<id>`; returns `{ authorisation_url, billing_request_id }` |
 | `POST /hosted/ibp/start` | Hosted IBP — accepts `{ amount, currency, prefilled_customer? }`; creates a GBP/FasterPayments billing request + billing request flow; `prefilled_customer` forwarded to the flow; same redirect pattern as DD hosted; returns `{ authorisation_url, billing_request_id }` |
-| `POST /hosted/instant-plus-dd/start` | Hosted Instant+DD — accepts `{ amount, currency, prefilled_customer? }`; creates a combined billing request (payment_request faster_payments + mandate_request bacs) + billing request flow; `prefilled_customer` forwarded to the flow; same redirect pattern; returns `{ authorisation_url, billing_request_id }` |
+| `POST /hosted/instant-plus-dd/start` | Hosted Instant+DD — accepts `{ amount, currency, prefilled_customer?, subName?, subAmount?, subInterval?, subIntervalUnit? }`; creates a combined billing request (payment_request faster_payments + mandate_request bacs) + billing request flow; `prefilled_customer` forwarded to the flow; sub config stored in `temp:br:{brId}` Redis hash (1-hour TTL) for the webhook worker to use; same redirect pattern; returns `{ authorisation_url, billing_request_id }` |
 | `POST /webhooks` | Receive & enqueue GoCardless webhook events |
 | `GET /events/stream` | SSE stream — pushes processed events to the UI |
 | `GET /history` | Return hierarchical payment history from Redis — all customers with their mandates, payments, subscriptions, and instalment schedules |
@@ -65,7 +65,7 @@ Thin key/value cache for all created resources — used by the history route and
 
 Key scheme: `customer:{id}`, `mandate:{id}`, `payment:{id}`, `subscription:{id}`, `instalment_schedule:{id}`. Index sets: `idx:customers`, `idx:mandates`, etc.
 
-Temp storage for billing-request details (customer name/email) before mandate ID is known: `temp:br:{brId}` — 1-hour TTL; read and promoted when the billing request is fulfilled.
+Temp storage for billing-request details before mandate ID is known: `temp:br:{brId}` — 1-hour TTL. Stores name/email (written by `collect-customer-details` on Custom flows) and/or sub config (written by `POST /hosted/instant-plus-dd/start`). Read and promoted when the billing request is fulfilled. Customer name: `resources.customer` from the GC response is used as the primary source; `temp:br` name/email is the fallback for Custom flows.
 
 Functions: `upsertCustomer`, `upsertMandate`, `upsertPayment`, `upsertSubscription`, `upsertInstalmentSchedule`, plus `update*State` and relationship lookups (`getMandatesByCustomer`, `getPaymentsByMandate`, etc.). `getIbpPaymentsByCustomer` filters for payments of type `'ibp'` or `'instant-plus-dd'` (stored without a real mandate link).
 
@@ -82,7 +82,11 @@ Types are defined in `src/types/store.ts`:
 4. `webhookEmitter` (`src/events/emitter.ts`) is a Node `EventEmitter` that bridges the worker to the SSE route.
 5. The SSE route (`src/routes/sse.ts`) emits a heartbeat every 30 s to keep proxies alive.
 
-**`handleBillingRequest`** handles `billing_requests.fulfilled` as a fallback for IBP and Instant+DD flows — seeds the customer and payment into Redis in case the customer authorises at their bank but never returns to the app (browser closed, direct-to-app flow, etc.). Every write is guarded with an existence check so it never overwrites data already seeded by the HTTP redirect callback. All other `billing_requests.*` actions are no-ops.
+**`handleBillingRequest`** handles `billing_requests.fulfilled` for IBP and Instant+DD flows:
+- Seeds the customer and IBP payment into Redis (guarded by existence checks so it never overwrites data already seeded by the HTTP redirect callback).
+- For hosted Instant+DD flows (identified by the presence of sub config in `temp:br:{brId}` — stored by `POST /hosted/instant-plus-dd/start`): reads the sub config and calls `POST /subscriptions` on GoCardless, then `upsertSubscription`. This makes subscription creation resilient to browser closes and async authorisation paths. Cleans up the `temp:br` key after the subscription is created.
+- Customer name/email: `resources.customer` from the fulfilled billing request response is used as the primary source; `temp:br` name/email is the fallback.
+- All other `billing_requests.*` actions are no-ops.
 
 ## Client (`client/`)
 
@@ -234,18 +238,19 @@ Shown automatically by `App.tsx` when the URL contains `?gc_billing_request_id=`
 
 **What it does on mount (auto-runs, no user click required):**
 1. Reads `HostedSessionConfig` from `sessionStorage`.
-2. **Step 1 — Read Billing Request** (behaviour differs by case):
-   - **DD (Hosted)**: `GET /billing-requests/:id` — GoCardless auto-fulfils on the hosted page; reads `links.mandate_request_mandate`.
-   - **IBP (Hosted or Custom)**: `GET /billing-requests/:id` — GoCardless auto-fulfils the billing request the moment the customer authorises; reads `links.payment_request_payment`. No manual `fulfil` call needed.
-   - **Instant+DD (Hosted or Custom)**: `GET /billing-requests/:id` — reads `links.mandate_request_mandate` (required); `links.payment_request_payment` is read if present but not required since the instant payment completes asynchronously.
-3. **Step 2 — Create resource** (DD flows and Instant+DD): creates subscription / payment / instalment schedule using the config values. Pure IBP skips this step — the payment was already created by GoCardless during bank authorisation.
-4. Shows live step tracker (`○ ◌ ✓ ✗`) + success banner or error.
+2. **Step 1 — Read Billing Request**: one single `GET /billing-requests/:id` call — no polling.
+   - **DD (Hosted)**: reads `links.mandate_request_mandate`. Throws if not present.
+   - **IBP (Hosted or Custom)**: reads `links.payment_request_payment`. If not yet populated, shows a neutral "Payment is processing" message and closes cleanly — the payment will surface via SSE → history table.
+   - **Instant+DD (Hosted)**: reads `links.mandate_request_mandate`. If not yet populated, same "processing" path as IBP. Subscription is created by the webhook worker (not the client).
+   - **Instant+DD (Custom, `cfg.flow === 'instant-plus-dd-custom'`)**: reads `links.mandate_request_mandate`. If present, proceeds to Step 2 to create the subscription client-side.
+3. **Step 2 — Create resource**: creates subscription / payment / instalment schedule using the config values. Skipped for: pure IBP (payment already created by GoCardless), and hosted Instant+DD (subscription created by webhook worker). Custom Instant+DD still creates the subscription here.
+4. Shows live step tracker (`○ ◌ ✓ ✗`) + success banner or neutral processing message.
 
 The Step 1 label is always "Read Billing Request" — all paths call `GET /billing-requests/:id` since GoCardless auto-fulfils in all cases.
 
 A brief summary of what was configured (amount, frequency, name) is shown at the top of the modal.
 
-On close: `window.history.replaceState({}, '', '/')` removes the query param and `sessionStorage.removeItem('gc_hosted_config')` clears the session (on success; on error the user can retry by starting a new flow).
+On close: `window.history.replaceState({}, '', '/')` removes the query param and `sessionStorage.removeItem('gc_hosted_config')` clears the session (on success or processing; on error the user can retry by starting a new flow).
 
 **`App.tsx`** reads `gc_billing_request_id` from the URL via a lazy `useState` initialiser and passes it to `HostedCallbackModal`. On close it calls `window.history.replaceState` and sets state to `null`.
 

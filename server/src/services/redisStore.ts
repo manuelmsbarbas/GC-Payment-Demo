@@ -52,6 +52,27 @@ export async function deleteTempBrDetails(brId: string): Promise<void> {
   await redis.del(k.tempBr(brId));
 }
 
+// ── Temp billing-request sub config (Instant+DD hosted flows) ─────────────────
+
+export interface TempBrSubConfig {
+  sub_name: string;
+  sub_amount: string;
+  sub_interval: string;
+  sub_interval_unit: string;
+  sub_currency: string;
+}
+
+export async function saveTempBrSubConfig(brId: string, data: TempBrSubConfig): Promise<void> {
+  await redis.hset(k.tempBr(brId), data as unknown as Record<string, string>);
+  await redis.expire(k.tempBr(brId), 3600);
+}
+
+export async function getTempBrSubConfig(brId: string): Promise<TempBrSubConfig | null> {
+  const raw = await redis.hgetall(k.tempBr(brId));
+  if (!raw.sub_name) return null;
+  return raw as unknown as TempBrSubConfig;
+}
+
 // ── Customer ──────────────────────────────────────────────────────────────────
 
 export async function upsertCustomer(customer: StoredCustomer): Promise<void> {

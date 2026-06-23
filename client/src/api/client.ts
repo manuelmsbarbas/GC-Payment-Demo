@@ -17,7 +17,7 @@ import type {
   PrefilledCustomer,
 } from '../types/api';
 
-const BASE = 'https://gc-demo-test-server-production.up.railway.app';
+const BASE = 'http://localhost:3001';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
@@ -92,8 +92,13 @@ export const api = {
   hostedIbpStart: (amount: number, currency: string, prefilled_customer?: PrefilledCustomer) =>
     post<HostedStartResponse>('/hosted/ibp/start', { amount, currency, prefilled_customer }),
 
-  hostedInstantPlusDDStart: (amount: number, currency: string, prefilled_customer?: PrefilledCustomer) =>
-    post<HostedStartResponse>('/hosted/instant-plus-dd/start', { amount, currency, prefilled_customer }),
+  hostedInstantPlusDDStart: (
+    amount: number,
+    currency: string,
+    prefilled_customer?: PrefilledCustomer,
+    sub_config?: { subName: string; subAmount: string; subInterval: string; subIntervalUnit: string }
+  ) =>
+    post<HostedStartResponse>('/hosted/instant-plus-dd/start', { amount, currency, prefilled_customer, ...sub_config }),
 
   getHistory: () =>
     get<HistoryResponse>('/history'),

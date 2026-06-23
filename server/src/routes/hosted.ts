@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { gcFetch } from '../services/gocardless';
 import { env } from '../config/env';
+import { saveTempBrSubConfig } from '../services/redisStore';
 
 const router = Router();
 
@@ -111,10 +112,14 @@ router.post('/ibp/start', async (req: Request, res: Response) => {
 // for the Instant + Direct Debit hosted flow.
 router.post('/instant-plus-dd/start', async (req: Request, res: Response) => {
   try {
-    const { amount, currency = 'GBP', prefilled_customer } = req.body as {
+    const { amount, currency = 'GBP', prefilled_customer, subName, subAmount, subInterval, subIntervalUnit } = req.body as {
       amount?: number;
       currency?: string;
       prefilled_customer?: Record<string, string>;
+      subName?: string;
+      subAmount?: string;
+      subInterval?: string;
+      subIntervalUnit?: string;
     };
 
     const brData = await gcFetch<{ billing_requests: { id: string } }>('/billing_requests', {
@@ -135,6 +140,16 @@ router.post('/instant-plus-dd/start', async (req: Request, res: Response) => {
       },
     });
     const billingRequestId = brData.billing_requests.id;
+
+    if (subName) {
+      await saveTempBrSubConfig(billingRequestId, {
+        sub_name: subName,
+        sub_amount: subAmount ?? '10.00',
+        sub_interval: subInterval ?? '1',
+        sub_interval_unit: subIntervalUnit ?? 'monthly',
+        sub_currency: currency,
+      });
+    }
 
     const redirectUri = `${env.clientOrigin}/?gc_billing_request_id=${billingRequestId}`;
 

@@ -313,7 +313,7 @@ export function PaymentsHistoryTable() {
   }, []);
 
   useEffect(() => {
-    const es = new EventSource('https://gc-demo-test-server-production.up.railway.app/events/stream');
+    const es = new EventSource('http://localhost:3001/events/stream');
     es.onmessage = (e) => {
       if (e.data === 'heartbeat') return;
       try {
